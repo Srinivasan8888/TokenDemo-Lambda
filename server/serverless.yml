@@ -1,0 +1,46 @@
+service: token-demo-backend
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-south-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 1024
+  timeout: 29
+  logs:
+    httpApi: true
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    dbName: ${env:dbName}
+    REDIS_USERNAME: ${env:REDIS_USERNAME}
+    REDIS_PASSWORD: ${env:REDIS_PASSWORD}
+    REDIS_HOST: ${env:REDIS_HOST}
+    REDIS_PORT: ${env:REDIS_PORT}
+    ACCESS_SECRET_KEY: ${env:ACCESS_SECRET_KEY}
+    REFRESH_SECRET_KEY: ${env:REFRESH_SECRET_KEY}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY}
+    IV_LENGTH: ${env:IV_LENGTH}
+    API_SECRET_KEY: ${env:API_SECRET_KEY}
+
+functions:
+  api:
+    handler: server.handler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+      - httpApi:
+          path: /
+          method: ANY
+
+custom:
+
+package:
+  patterns:
+    - "!.git/**"
+    - "!README.md"
+    - "!.gitignore"
+    - "!test/**"
+    - "!*.test.js"

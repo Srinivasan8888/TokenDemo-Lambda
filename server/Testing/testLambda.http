@@ -1,0 +1,23 @@
+### Test Lambda Health
+GET https://7twv3rxq8c.execute-api.ap-south-1.amazonaws.com/health
+
+### Test Lambda Root
+GET https://7twv3rxq8c.execute-api.ap-south-1.amazonaws.com/
+
+### Test Backend Login
+POST https://7twv3rxq8c.execute-api.ap-south-1.amazonaws.com/backend/userLogin
+Content-Type: application/json
+
+{
+  "username": "jeffrey3@xyma.in",
+  "password": "Jeffrey@27"
+}
+
+### Test Direct Login (without backend prefix)
+POST https://7twv3rxq8c.execute-api.ap-south-1.amazonaws.com/userLogin
+Content-Type: application/json
+
+{
+  "username": "jeffrey3@xyma.in",
+  "password": "Jeffrey@27"
+}
