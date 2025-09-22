@@ -579,6 +579,8 @@ export const insertData = async (req, res, next) => {
       timestamp,
     } = req.body;
 
+    // console.log("req body", req.body);
+
     const requiredFields = [
       deviceName,
       s1,
@@ -673,18 +675,6 @@ export const insertData = async (req, res, next) => {
 
     // alert log collection
     if (crossedSensorsLower.length > 0 || crossedSensorsUpper.length > 0) {
-      // if (crossedSensorsLower.length > 0) {
-      //   logMessage.push(
-      //     `${crossedSensorsLower} dropped below the lower limit of ${overallLowerLimit}°C at ${logTime}`
-      //   );
-      // }
-
-      // if (crossedSensorsUpper.length > 0) {
-      //   logMessage.push(
-      //     `${crossedSensorsUpper} exceeded the upper limit of ${overallUpperLimit}°C at ${logTime}`
-      //   );
-      // }
-
       const logInfo = {
         DeviceName: "XY001",
         UpperLimit: overallUpperLimit,
@@ -779,8 +769,6 @@ export const getData = async (req, res, next) => {
     // get alert logs
     const alertLogs = await userAlertLogModel.find().sort({ _id: -1 });
 
-    // console.log("alertLogs", alertLogs[0]);
-
     // check process status
     const lastProcess = processConfig[0];
 
@@ -861,11 +849,13 @@ export const getData = async (req, res, next) => {
     )},${hours}:${minutes}:${seconds}`;
 
     // console.log("formatted past time", formattedPastTime);
-    let filteredData;
+    let filteredData = [];
     let timeElapsedString = "N/A";
+    let sensorValues = {}
+    const stoppedTime = lastProcess?.StoppedTime;
 
     // process running
-    if (lastProcess.StoppedTime === "") {
+    if (stoppedTime === "") {
       filteredData = await dataModel
         .find({
           DeviceName: "XY001",
@@ -894,7 +884,7 @@ export const getData = async (req, res, next) => {
       ).padStart(2, "0")}s`;
     }
     // process stopped
-    else if (lastProcess.StoppedTime !== "") {
+    else if (stoppedTime !== "") {
       filteredData = await dataModel
         .find({
           DeviceName: "XY001",
@@ -908,8 +898,6 @@ export const getData = async (req, res, next) => {
     }
 
     if (filteredData.length > 0) {
-      const sensorValues = {};
-
       for (let i = 1; i <= 16; i++) {
         const sensorKey = `S${i}`;
 
@@ -926,29 +914,18 @@ export const getData = async (req, res, next) => {
           ).toFixed(1),
         };
       }
-
-      res.status(200).json({
-        data: filteredData,
-        sensorValues,
-        lastData,
-        activityStatus,
-        thresholdStatus,
-        processConfig,
-        timeElapsedString,
-        alertLogs,
-      });
-    } else if (filteredData.length === 0) {
-      res.status(200).json({
-        data: [],
-        sensorValues: {},
-        lastData,
-        activityStatus,
-        thresholdStatus: {},
-        processConfig,
-        timeElapsedString,
-        alertLogs,
-      });
     }
+
+    res.status(200).json({
+      data: filteredData,
+      sensorValues,
+      lastData,
+      activityStatus,
+      thresholdStatus,
+      processConfig,
+      timeElapsedString,
+      alertLogs,
+    });
   } catch (error) {
     next(error);
   }
@@ -1147,6 +1124,7 @@ export const getReports = async (req, res, next) => {
 
     // sensor page option
     else if (dateRange && sensorId) {
+      console.log("triggered");
       // calculate current time
       const formattedCurrentTime = getCurrentKolkataTimestamp();
 
@@ -1229,9 +1207,12 @@ export const getReports = async (req, res, next) => {
         .sort({ _id: -1 })
         .select({ [sensorId]: 1, Timestamp: 1 });
 
+      let sensorValues = {};
+      let finalArray = [];
+
       if (dateRangeData.length > 0) {
         //min max avg
-        const sensorValues = {};
+        // const sensorValues = {};
 
         const sensorData = dateRangeData.map((data) =>
           parseFloat(data[sensorId])
@@ -1266,7 +1247,7 @@ export const getReports = async (req, res, next) => {
           return acc;
         }, {});
 
-        const finalArray = Object.values(groupedData).map(
+        finalArray = Object.values(groupedData).map(
           (group, index, array) => {
             const avgValue = (group.sum / group.count).toFixed(2);
             const isFirstEntry = index === array.length - 1;
@@ -1283,9 +1264,8 @@ export const getReports = async (req, res, next) => {
             };
           }
         );
-
-        res.status(200).json({ finalArray, sensorValues });
       }
+      res.status(200).json({ finalArray, sensorValues });
     }
 
     // moitor report download activity

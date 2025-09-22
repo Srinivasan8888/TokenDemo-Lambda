@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* border */
+  .bbb {
+    @apply border border-black;
+  }
+  /* hover effect */
+  .hover-effect {
+    @apply hover:scale-110 duration-200 cursor-pointer;
+  }
+
+  /* mainpage -> nav button */
+  .nav-button {
+    @apply hover-effect rounded-full py-2 px-4 text-xs 2xl:text-sm flex gap-1 items-center text-[#3047C0] bg-white hover:bg-[#3047C0] hover:text-white;
+  }
+
+  /* mainpage -> nav button mobile */
+  .nav-button-mobile {
+    @apply hover-effect rounded-full py-2 px-4 text-xs flex gap-4 items-center text-[#3047C0] bg-white hover:bg-[#3047C0] hover:text-white;
+  }
+
+  /* mainpage -> tool button */
+  .tools-button {
+    @apply bg-white w-8 h-8 2xl:h-10 2xl:w-10 flex items-center justify-center rounded-full text-[#3047C0];
+  }
+
+  /* mainpage -> cards */
+  .card-style {
+    @apply bg-[#EAEDF9] rounded-md shadow-[0_2px_5px_rgba(14,0,136,0.2)] flex flex-col gap-2 xl:gap-1 justify-center items-center px-4 py-4 xl:px-2 xl:py-1;
+  }
+
+  /* mainpage -> card value */
+  .card-value {
+    @apply text-xs xs:text-base xl:text-xl 2xl:text-2xl font-semibold;
+  }
+
+  /* mainpage -> interval selection */
+  .interval-button {
+    @apply hover-effect text-[#3047C0] hover:bg-[#3047C0] hover:text-white rounded-sm p-1 border border-[#3047C0] text-xs font-medium;
+  }
+
+  /* mainpage -> process buttons */
+  .process-button {
+    @apply hover-effect flex gap-1 items-center rounded-full py-1 px-4 font-medium duration-300;
+  }
+
+  /* reports -> options */
+  .report-option {
+    @apply duration-300 p-2 md:p-4 flex flex-row md:flex-col xl:flex-row items-center justify-center gap-1 md:gap-2 font-medium hover:bg-[#BFC6EB] shadow-[0_2px_5px_rgba(14,0,136,0.2)] border-b-4 border-l-0 border-r-0 border-t-0 hover:border-b-[#3047C0] text-xs md:text-base 2xl:text-xl cursor-pointer;
+  }
+
+  /* reports -> downloads button */
+  .reports-download {
+    @apply hover-effect bg-[#3047C0] text-white py-1 px-4 2xl:py-2 rounded-md flex gap-1 2xl:gap-2 items-center;
+  }
+
+  /* reports -> input field */
+  .reports-input {
+    @apply w-1/2 p-1 2xl:p-2 rounded-sm;
+  }
+
+  /* reports -> selection */
+  .reports-selection {
+    @apply bg-[#EAEDF9] rounded-xl p-4 md:p-10 2xl:p-12 flex flex-col gap-4 xs:gap-6 md:gap-10 2xl:gap-12 w-[90%] xl:w-[60%] text-xs md:text-base 2xl:text-xl;
+  }
+
+  /* reports form title */
+  .reports-title {
+    @apply text-center font-medium text-sm md:text-lg 2xl:text-2xl;
+  }
+
+  /* analytics -> radio label */
+  .analytics-radio {
+    @apply flex items-center bg-[#E0E3F6] rounded-md p-1 hover-effect gap-1 text-xs;
+  }
+
+  /* sensor -> date range */
+  .date-range-button {
+    @apply bg-white hover-effect text-[#3047C0] hover:bg-[#3047C0] hover:text-white rounded-full p-1 w-8 h-8 2xl:w-10 2xl:h-10  text-[10px] md:text-xs leading-tight md:leading-normal 2xl:text-sm font-medium;
+  }
+
+  /* settings -> info box */
+  .info-box {
+    @apply bg-white w-full xl:w-[75%] p-2 font-medium text-sm 2xl:text-base rounded-sm text-[#3047C0];
+  }
+
+  /* settings -> info layout */
+  .info-layout {
+    @apply flex flex-col items-start xl:items-center gap-1 w-full md:w-1/5 px-0 xl:px-4;
+  }
+
+  .blue-button {
+    @apply py-1 px-4 rounded-md hover-effect bg-[#3047C0] text-white;
+  }
+
+  .white-button {
+    @apply text-[#3047C0] py-1 px-4 rounded-md bg-white hover-effect;
+  }
+}
+
+/* bracket style border */
+.bracket-border {
+  position: relative;
+  border: none;
+  /* background: none; */
+}
+
+.bracket-border::before,
+.bracket-border::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  border: 1.5px solid #3047c0;
+  content: "";
+}
+
+.bracket-border::before {
+  left: 0;
+  border-right-width: 0;
+}
+
+.bracket-border::after {
+  right: 0;
+  border-left-width: 0;
+}
+
+* {
+  white-space: nowrap;
+}

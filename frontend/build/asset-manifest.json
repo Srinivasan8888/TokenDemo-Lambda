@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.2320eba1.css",
+    "main.js": "/static/js/main.021070b8.js",
+    "static/media/loginCover.jpg": "/static/media/loginCover.895785932efc8e386d79.jpg",
+    "static/media/jindalModel.png": "/static/media/jindalModel.b8146d035e87720a8c58.png",
+    "static/media/jindalLogo.png": "/static/media/jindalLogo.d9816ad62951446ed141.png",
+    "static/media/xymaLogoBlue.png": "/static/media/xymaLogoBlue.c614030b2cd257f55f9a.png",
+    "static/media/xymaLogoWhite.png": "/static/media/xymaLogoWhite.4e2ffa7fd8e87d8d9843.png",
+    "static/media/reportsVector.png": "/static/media/reportsVector.b75c521aa6913cd33de5.png",
+    "index.html": "/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.2320eba1.css",
+    "static/js/main.021070b8.js"
+  ]
+}
