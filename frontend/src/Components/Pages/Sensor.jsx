@@ -40,7 +40,7 @@ ChartJS.register(
   ScatterController
 );
 
-const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
+const Sensor = () => {
   const { sensorId } = useParams();
   const navigate = useNavigate();
   const lineChartRef = useRef(null);
@@ -50,16 +50,14 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
   const [minValue, setMinValue] = useState("");
   const [maxValue, setMaxValue] = useState("");
   const [avgValue, setAvgValue] = useState("");
+  const [lastData, setLastData] = useState({});
+  const [thresholdStatus, setThresholdStatus] = useState({});
+  const [activityStatus, setActivityStatus] = useState("");
 
-  // date range option
-  const getInitialDateRangeOption = () => {
+  const [dateRangeOption, setDateRangeOption] = useState(() => {
     const initialOpt = localStorage.getItem("jindlaDateOption");
-    return initialOpt;
-  };
-
-  const [dateRangeOption, setDateRangeOption] = useState(
-    getInitialDateRangeOption
-  );
+    return initialOpt ? initialOpt : "1d";
+  });
 
   const handleDateOption = (option) => {
     localStorage.setItem("jindlaDateOption", option);
@@ -71,13 +69,16 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
       const dateRange = localStorage.getItem("jindlaDateOption");
       console.log("api triggered for:", dateRange);
 
-      const response = await API.get("/getReports", {
+      const response = await API.get("/getSensorData", {
         params: {
           dateRange,
           sensorId,
         },
       });
 
+      setLastData(response.data.lastData);
+      setActivityStatus(response.data.activityStatus);
+      setThresholdStatus(response.data.thresholdStatus);
       setSensorData(response.data.finalArray);
       setMinValue(
         response.data.sensorValues?.[sensorId]?.min !== undefined
@@ -100,8 +101,17 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
   };
 
   useEffect(() => {
-    fetchAverageData();
-  }, []);
+    let timeoutId;
+
+    const fetch = async () => {
+      await fetchAverageData();
+      timeoutId = setTimeout(fetch, 20000);
+    };
+
+    fetch();
+
+    return () => clearTimeout(timeoutId);
+  }, [dateRangeOption]);
 
   //line chart data
   const [lineData, setLineData] = useState({
@@ -289,7 +299,7 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
   // console.log("last data", lastData);
   // console.log("sensor id", sensorId);
   // console.log("last sensor data", lastData.S1);
-  console.log("sensor data", sensorData);
+  // console.log("sensor data", sensorData);
 
   return (
     <div
@@ -435,7 +445,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("1d");
-                        fetchAverageData();
                       }}
                     >
                       1D
@@ -446,7 +455,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("2d");
-                        fetchAverageData();
                       }}
                     >
                       2D
@@ -457,7 +465,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("3d");
-                        fetchAverageData();
                       }}
                     >
                       3D
@@ -468,7 +475,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("7d");
-                        fetchAverageData();
                       }}
                     >
                       7D
@@ -479,7 +485,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("14d");
-                        fetchAverageData();
                       }}
                     >
                       14D
@@ -490,7 +495,6 @@ const Sensor = ({ lastData, activityStatus, thresholdStatus }) => {
                       }`}
                       onClick={() => {
                         handleDateOption("30d");
-                        fetchAverageData();
                       }}
                     >
                       30D

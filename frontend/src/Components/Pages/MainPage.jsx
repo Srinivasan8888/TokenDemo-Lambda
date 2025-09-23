@@ -56,16 +56,16 @@ ChartJS.register(
 // -[#e9edf9] - main bg'
 // -[#E0E3F6]
 
-const MainPage = ({
-  dataFromApp,
-  lastData,
-  activityStatus,
-  sensorValues,
-  thresholdStatus,
-  processConfig,
-  timeElapsed,
-  alertLogs,
-}) => {
+const MainPage = () => {
+  const [dataFromApp, setDataFromApp] = useState([]);
+  const [lastData, setLastData] = useState([]);
+  const [activityStatus, setActivityStatus] = useState("");
+  const [sensorValues, setSensorValues] = useState({});
+  const [thresholdStatus, setThresholdStatus] = useState({});
+  const [processConfig, setProcessConfig] = useState([]);
+  const [timeElapsed, setTimeElapsed] = useState("");
+  const [alertLogs, setAlertLogs] = useState([]);
+
   const [lowerLimit, setLowerLimit] = useState("");
   const [upperLimit, setUpperLimit] = useState("");
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -81,16 +81,66 @@ const MainPage = ({
   const [selectedSection, setSelectedSection] = useState("");
   const [acceptedTC, setAcceptedTC] = useState("");
 
+  // live interval option
+  const [liveIntervalOption, setLiveIntervalOption] = useState(() => {
+    const initialOption = localStorage.getItem("jindalIntervalOption");
+    return initialOption ? initialOption : "1h";
+  });
+
+  const handleLiveIntervalOption = (option) => {
+    localStorage.setItem("jindalIntervalOption", option);
+    chartRef.current?.resetZoom();
+    setLiveIntervalOption(option);
+  };
+
   const chartRef = useRef(null);
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
   const { userEmail, userName } = useOutletContext();
 
+  const getData = async () => {
+    const intervalOption = localStorage.getItem("jindalIntervalOption");
+    if (intervalOption) {
+      try {
+        const response = await API.get("/getData", {
+          params: { intervalOption },
+        });
+
+        if (response.status === 200) {
+          setDataFromApp(response.data.data);
+          setLastData(response.data.lastData);
+          setActivityStatus(response.data.activityStatus);
+          setSensorValues(response.data.sensorValues);
+          setThresholdStatus(response.data.thresholdStatus);
+          setProcessConfig(response.data.processConfig);
+          setTimeElapsed(response.data.timeElapsedString);
+          setAlertLogs(response.data.alertLogs);
+        }
+      } catch (error) {
+        console.error("Error fetching data", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    let timeoutId;
+
+    const fetch = async () => {
+      await getData();
+      timeoutId = setTimeout(fetch, 2000);
+    };
+
+    fetch();
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [liveIntervalOption]);
+
   const isProcessRunning = processConfig?.[0]?.StoppedTime === "";
 
-  // console.log("is process running", isProcessRunning);
-  // console.log("alert logs", alertLogs);
+  console.log("data length", dataFromApp.length);
 
   // min max value scroll
   const handleScroll = (direction) => {
@@ -102,22 +152,6 @@ const MainPage = ({
 
     setScrollPosition(newPosition);
     scrollRef.current.scrollTo({ left: newPosition, behavior: "smooth" });
-  };
-
-  // live interval option
-  const getIntialIntervalOption = () => {
-    const initialOption = localStorage.getItem("jindalIntervalOption");
-    return initialOption;
-  };
-
-  const [liveIntervalOption, setLiveIntervalOption] = useState(
-    getIntialIntervalOption
-  );
-
-  const handleLiveIntervalOption = (option) => {
-    localStorage.setItem("jindalIntervalOption", option);
-    chartRef.current?.resetZoom();
-    setLiveIntervalOption(option);
   };
 
   // console.log("liveIntervalOption", liveIntervalOption);
@@ -464,7 +498,9 @@ const MainPage = ({
                     : "text-gray-500"
                 }`}
               >
-                {lastData ? `${lastData[sensor]}°C` : "N/A"}
+                {lastData && lastData[sensor] !== undefined
+                  ? `${lastData[sensor]}°C`
+                  : "N/A"}
               </div>
 
               <button className="absolute top-1 right-1 2xl:top-2 2xl:right-2 text-[#3047C0] hover:scale-125 duration-200 text-base md:text-lg 2xl:text-xl">
@@ -847,7 +883,8 @@ const MainPage = ({
             </div>
           </div>
 
-          <div className="h-[200px] md:h-[300px] xl:h-auto xl:flex xl:flex-1">
+          {/* <div className="h-[300px] md:h-[350px] xl:h-auto xl:flex xl:flex-1"> */}
+          <div className="xl:flex xl:flex-1">
             <ThreeDModel
               lastData={lastData}
               thresholdStatus={thresholdStatus}

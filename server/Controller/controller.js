@@ -28,6 +28,9 @@ import {
 import client from "../Helpers/initRedis.js";
 import nodemailer from "nodemailer";
 
+import logActivityWithLocation from "../utils/logActivityWithLocation.js";
+import getPastTime from "../utils/getPastTime.js";
+
 // function to calculate kolkata timestamp
 const getCurrentKolkataTimestamp = () => {
   const dateTime = new Date();
@@ -118,31 +121,6 @@ const sendAlertMail = async (content, time) => {
     console.log("alert mail sent!");
   } catch (error) {
     console.error("Error sending mail:", error.message);
-  }
-};
-
-//  log user activity with location
-const logActivityWithLocation = async (ipAddress, activityInfo) => {
-  try {
-    if (ipAddress && ipAddress.includes("::ffff:")) {
-      ipAddress = ipAddress.split(":").pop();
-    }
-    const ipApiUrl = `https://ipapi.co/${ipAddress}/json/`;
-    const response = await fetch(ipApiUrl);
-    const locationData = await response.json();
-
-    activityInfo.Ip = locationData?.ip ?? "N/A";
-    activityInfo.City = locationData?.city ?? "N/A";
-    activityInfo.Region = locationData?.region ?? "N/A";
-    activityInfo.Country = locationData?.country_name ?? "N/A";
-    activityInfo.Latitude = locationData?.latitude ?? "N/A";
-    activityInfo.Longitude = locationData?.longitude ?? "N/A";
-    activityInfo.Isp = locationData?.org ?? "N/A";
-
-    await userActivityModel.create(activityInfo);
-  } catch (error) {
-    console.error("Error fetching location data:", error.message);
-    return null;
   }
 };
 
@@ -444,8 +422,7 @@ export const userLogin = async (req, res, next) => {
       Time: timeStamp,
     };
 
-    let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    await logActivityWithLocation(ipAddress, activityInfo);
+    logActivityWithLocation(req, activityInfo);
 
     res.send({
       accessToken,
@@ -519,8 +496,7 @@ export const logout = async (req, res, next) => {
       Time: timeStamp,
     };
 
-    let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    await logActivityWithLocation(ipAddress, activityInfo);
+    logActivityWithLocation(req, activityInfo);
 
     if (refreshTokenDeleted && accessTokenDeleted) {
       res.sendStatus(204);
@@ -803,52 +779,8 @@ export const getData = async (req, res, next) => {
       }
     }
 
-    let pastTime = "";
-    const currentDateTime = new Date();
+    const formattedPastTime = getPastTime(intervalOption);
 
-    // last 1 hour data
-    if (intervalOption === "1h") {
-      pastTime = new Date(currentDateTime.getTime() - 1 * 60 * 60 * 1000);
-    }
-
-    // last 3 hour data
-    else if (intervalOption === "3h") {
-      pastTime = new Date(currentDateTime.getTime() - 3 * 60 * 60 * 1000);
-    }
-
-    // last 6 hour data
-    else if (intervalOption === "6h") {
-      pastTime = new Date(currentDateTime.getTime() - 6 * 60 * 60 * 1000);
-    }
-
-    // last 12 hour data
-    else if (intervalOption === "12h") {
-      pastTime = new Date(currentDateTime.getTime() - 12 * 60 * 60 * 1000);
-    }
-
-    const kolkataTime = pastTime.toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata",
-      hour12: false,
-    });
-
-    const [date, time] = kolkataTime.split(", ");
-    const [month, day, year] = date.split("/");
-    let [hours, minutes, seconds] = time.split(":");
-
-    if (hours === "24") {
-      hours = "00";
-    }
-
-    hours = hours.padStart(2, "0");
-    minutes = minutes.padStart(2, "0");
-    seconds = seconds.padStart(2, "0");
-
-    const formattedPastTime = `${year}-${month.padStart(2, "0")}-${day.padStart(
-      2,
-      "0"
-    )},${hours}:${minutes}:${seconds}`;
-
-    // console.log("formatted past time", formattedPastTime);
     let filteredData = [];
     let timeElapsedString = "N/A";
     let sensorValues = {}
@@ -934,6 +866,7 @@ export const getData = async (req, res, next) => {
 export const getReports = async (req, res, next) => {
   try {
     const {
+      initialCall,
       fromReports,
       selectedReportOption,
       fromDate,
@@ -945,14 +878,22 @@ export const getReports = async (req, res, next) => {
       intFromDate,
       intToDate,
       intOption,
-      dateRange,
-      sensorId,
       processInfo,
       userEmail,
       userName,
     } = req.query;
 
-    console.log("req.query", req.query);
+    if (initialCall === "true") {
+      const processConfig = await processConfigModel
+        .find({ DeviceName: "XY001" })
+        .sort({ _id: -1 });
+
+      const filteredProcessConfig = processConfig.filter(
+        (data) => data.StoppedTime !== ""
+      );
+
+      return res.status(200).json(filteredProcessConfig);
+    }
 
     let formattedFromDate = "";
     let formattedToDate = "";
@@ -1077,7 +1018,8 @@ export const getReports = async (req, res, next) => {
         };
 
         if (avgOption === "hour" || avgOption === "day") {
-          res.status(200).json(groupAndAverage(reportData, avgOption));
+          const averageData = groupAndAverage(reportData, avgOption);
+          res.status(200).json(averageData);
         }
       }
     }
@@ -1122,152 +1064,6 @@ export const getReports = async (req, res, next) => {
       }
     }
 
-    // sensor page option
-    else if (dateRange && sensorId) {
-      console.log("triggered");
-      // calculate current time
-      const formattedCurrentTime = getCurrentKolkataTimestamp();
-
-      let pastTime = "";
-      const currentDateTime = new Date();
-
-      // last 1 day data
-      if (dateRange === "1d") {
-        pastTime = new Date(currentDateTime.getTime() - 24 * 60 * 60 * 1000);
-      }
-
-      // last 2 days data
-      else if (dateRange === "2d") {
-        pastTime = new Date(
-          currentDateTime.getTime() - 2 * 24 * 60 * 60 * 1000
-        );
-      }
-
-      // last 3 days data
-      else if (dateRange === "3d") {
-        pastTime = new Date(
-          currentDateTime.getTime() - 3 * 24 * 60 * 60 * 1000
-        );
-      }
-
-      // last 7 days data
-      else if (dateRange === "7d") {
-        pastTime = new Date(
-          currentDateTime.getTime() - 7 * 24 * 60 * 60 * 1000
-        );
-      }
-
-      // last 14 days data
-      else if (dateRange === "14d") {
-        pastTime = new Date(
-          currentDateTime.getTime() - 14 * 24 * 60 * 60 * 1000
-        );
-      }
-
-      // last 30 days data
-      else if (dateRange === "30d") {
-        pastTime = new Date(
-          currentDateTime.getTime() - 30 * 24 * 60 * 60 * 1000
-        );
-      }
-
-      const kolkataTime = pastTime.toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata",
-        hour12: false,
-      });
-
-      const [date, time] = kolkataTime.split(", ");
-      const [month, day, year] = date.split("/");
-      let [hours, minutes, seconds] = time.split(":");
-
-      if (hours === "24") {
-        hours = "00";
-      }
-
-      hours = hours.padStart(2, "0");
-      minutes = minutes.padStart(2, "0");
-      seconds = seconds.padStart(2, "0");
-
-      const formattedPastTime = `${year}-${month.padStart(
-        2,
-        "0"
-      )}-${day.padStart(2, "0")},${hours}:${minutes}:${seconds}`;
-
-      // console.log("formattedCurrentTime", formattedCurrentTime);
-      // console.log("past time", formattedPastTime);
-
-      const dateRangeData = await dataModel
-        .find({
-          DeviceName: "XY001",
-          Timestamp: {
-            $gte: formattedPastTime,
-            $lte: formattedCurrentTime,
-          },
-        })
-        .sort({ _id: -1 })
-        .select({ [sensorId]: 1, Timestamp: 1 });
-
-      let sensorValues = {};
-      let finalArray = [];
-
-      if (dateRangeData.length > 0) {
-        //min max avg
-        // const sensorValues = {};
-
-        const sensorData = dateRangeData.map((data) =>
-          parseFloat(data[sensorId])
-        );
-
-        sensorValues[sensorId] = {
-          max: Math.max(...sensorData),
-          min: Math.min(...sensorData),
-          avg: (
-            sensorData.reduce((sum, value) => sum + value, 0) /
-            sensorData.length
-          ).toFixed(1),
-        };
-
-        // find hourly average
-        const groupedData = dateRangeData.reduce((acc, item) => {
-          const [date, time] = item.Timestamp.split(",");
-          const hour = time.split(":")[0];
-
-          const key = `${date}-${hour}`;
-
-          if (!acc[key]) {
-            acc[key] = { date, hour, sum: 0, count: 0 };
-          }
-
-          const value = parseFloat(item[sensorId]);
-          if (!isNaN(value)) {
-            acc[key].sum += value;
-            acc[key].count++;
-          }
-
-          return acc;
-        }, {});
-
-        finalArray = Object.values(groupedData).map(
-          (group, index, array) => {
-            const avgValue = (group.sum / group.count).toFixed(2);
-            const isFirstEntry = index === array.length - 1;
-            const startDate = isFirstEntry
-              ? formattedPastTime.split(",")[0]
-              : group.date;
-            const startTime = isFirstEntry
-              ? formattedPastTime.split(",")[1]
-              : `${group.hour}:00:00`;
-
-            return {
-              [`avg${sensorId}`]: avgValue,
-              dateRange: `${startDate},${startTime} to ${group.date},${group.hour}:59:59`,
-            };
-          }
-        );
-      }
-      res.status(200).json({ finalArray, sensorValues });
-    }
-
     // moitor report download activity
     if (fromReports) {
       const reportTypes = {
@@ -1292,9 +1088,7 @@ export const getReports = async (req, res, next) => {
         Time: timeStamp,
       };
 
-      let ipAddress =
-        req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-      await logActivityWithLocation(ipAddress, activityInfo);
+      logActivityWithLocation(req, activityInfo);
     }
   } catch (error) {
     next(error);
@@ -1330,9 +1124,7 @@ export const updateThreshold = async (req, res, next) => {
         Time: timeStamp,
       };
 
-      let ipAddress =
-        req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-      await logActivityWithLocation(ipAddress, activityInfo);
+      logActivityWithLocation(req, activityInfo);
 
       if (data) {
         res.status(200).json(data);
@@ -1442,8 +1234,7 @@ export const updateProcessConfig = async (req, res, next) => {
       res.status(200).json({ message: "Alert logs cleared successfully!" });
     }
 
-    let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    await logActivityWithLocation(ipAddress, activityInfo);
+    logActivityWithLocation(req, activityInfo);
   } catch (error) {
     next(error);
   }
@@ -1614,8 +1405,7 @@ export const setAlertConfig = async (req, res, next) => {
       res.status(200).json({ message: "Password updated successfully!" });
     }
 
-    let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    await logActivityWithLocation(ipAddress, activityInfo);
+    logActivityWithLocation(req, activityInfo);
   } catch (error) {
     next(error);
   }
@@ -1843,3 +1633,119 @@ const scheduleCronReport = (cronSyntax, cronFrequency) => {
     );
   });
 };
+
+export const getSensorData = async (req, res, next) => {
+  try {
+    const { dateRange, sensorId } = req.query;
+
+    const lastData = await dataModel
+      .findOne({ DeviceName: "XY001" })
+      .sort({ _id: -1 })
+      .select({ [sensorId]: 1, Timestamp: 1 });
+
+    const thresholdData = await sensorThresholdConfigModel
+      .findOne({ DeviceName: "XY001" })
+      .select({ MaxLimit: 1, MinLimit: 1 });
+
+    let activityStatus = "N/A";
+    let thresholdStatus = {};
+
+    const formattedCurrentTime = getCurrentKolkataTimestamp();
+
+    if (lastData && thresholdData) {
+      const timeDiffInMinutes =
+        (new Date(formattedCurrentTime) - new Date(lastData.Timestamp)) /
+        (1000 * 60);
+
+      if (timeDiffInMinutes > 5) {
+        activityStatus = "inactive";
+      } else if (timeDiffInMinutes <= 5) {
+        activityStatus = "active";
+      }
+
+      const key = sensorId;
+      const value = Number(lastData[key]);
+
+      if (value > thresholdData.MaxLimit) {
+        thresholdStatus[key] = "high";
+      } else if (value < thresholdData.MinLimit) {
+        thresholdStatus[key] = "low";
+      } else {
+        thresholdStatus[key] = "inRange";
+      }
+    }
+
+    const formattedPastTime = getPastTime(dateRange);
+
+    const dateRangeData = await dataModel
+      .find({
+        DeviceName: "XY001",
+        Timestamp: {
+          $gte: formattedPastTime,
+          $lte: formattedCurrentTime,
+        },
+      })
+      .sort({ _id: -1 })
+      .select({ [sensorId]: 1, Timestamp: 1 });
+
+    let sensorValues = {};
+    let finalArray = [];
+
+    if (dateRangeData.length > 0) {
+      //min max avg
+      const sensorData = dateRangeData.map((data) =>
+        parseFloat(data[sensorId])
+      );
+
+      sensorValues[sensorId] = {
+        max: Math.max(...sensorData),
+        min: Math.min(...sensorData),
+        avg: (
+          sensorData.reduce((sum, value) => sum + value, 0) /
+          sensorData.length
+        ).toFixed(1),
+      };
+
+      // find hourly average
+      const groupedData = dateRangeData.reduce((acc, item) => {
+        const [date, time] = item.Timestamp.split(",");
+        const hour = time.split(":")[0];
+
+        const key = `${date}-${hour}`;
+
+        if (!acc[key]) {
+          acc[key] = { date, hour, sum: 0, count: 0 };
+        }
+
+        const value = parseFloat(item[sensorId]);
+        if (!isNaN(value)) {
+          acc[key].sum += value;
+          acc[key].count++;
+        }
+
+        return acc;
+      }, {});
+
+      finalArray = Object.values(groupedData).map(
+        (group, index, array) => {
+          const avgValue = (group.sum / group.count).toFixed(2);
+          const isFirstEntry = index === array.length - 1;
+          const startDate = isFirstEntry
+            ? formattedPastTime.split(",")[0]
+            : group.date;
+          const startTime = isFirstEntry
+            ? formattedPastTime.split(",")[1]
+            : `${group.hour}:00:00`;
+
+          return {
+            [`avg${sensorId}`]: avgValue,
+            dateRange: `${startDate},${startTime} to ${group.date},${group.hour}:59:59`,
+          };
+        }
+      );
+    }
+    res.status(200).json({ finalArray, sensorValues, lastData, activityStatus, thresholdStatus });
+  } catch (error) {
+    next(error);
+  }
+}

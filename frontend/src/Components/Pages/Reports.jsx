@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import Navbar from "../Reusables/Navbar";
 import API from "../../Api/axiosInterceptor";
@@ -16,7 +16,7 @@ import { AiOutlineSchedule } from "react-icons/ai";
 
 // -[#E0E3F6]
 
-const Reports = ({ processConfig }) => {
+const Reports = () => {
   const [selectedReportOption, setSelectedReportOption] =
     useState("processOption");
   const [fromDate, setFromDate] = useState("");
@@ -30,19 +30,16 @@ const Reports = ({ processConfig }) => {
   const [intOption, setIntOption] = useState("hour");
   const [processInfo, setProcessInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [processConfig, setProcessConfig] = useState([]);
 
   const { userEmail, userName } = useOutletContext();
 
-  const filteredProcessConfig = processConfig.filter(
-    (data) => data.StoppedTime !== ""
-  );
-
-  const handleReportDownload = async (e) => {
-    e.preventDefault();
+  const handleReportDownload = async (initialCall = false) => {
     try {
       setLoading(true);
       const response = await API.get("/getReports", {
         params: {
+          initialCall,
           fromReports: true,
           selectedReportOption,
           fromDate,
@@ -59,7 +56,11 @@ const Reports = ({ processConfig }) => {
           userName,
         },
       });
-      // console.log("report data", response.data);
+
+      if (initialCall) {
+        setProcessConfig(response.data);
+        return;
+      }
 
       if (response.data.length > 0) {
         const ws = XLSX.utils.json_to_sheet(response.data);
@@ -81,7 +82,11 @@ const Reports = ({ processConfig }) => {
     }
   };
 
-  // console.log("process config", processConfig);
+  useEffect(() => {
+    handleReportDownload(true);
+  }, []);
+
+  console.log("process config", processConfig);
   // console.log("process info", processInfo);
   // console.log("filtered config", filteredProcessConfig);
 
@@ -235,7 +240,11 @@ const Reports = ({ processConfig }) => {
               <div className="w-full h-[60%] xs:h-1/2 md:h-auto md:w-[55%] flex justify-center items-center">
                 <form
                   className="reports-selection"
-                  onSubmit={handleReportDownload}
+                  // onSubmit={handleReportDownload}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleReportDownload();
+                  }}
                 >
                   <div className="reports-title">Select Process</div>
 
@@ -250,7 +259,7 @@ const Reports = ({ processConfig }) => {
                       className="w-full xs:w-1/2 md:w-full lg:w-1/2 p-1 rounded-sm text-center"
                     >
                       <option value="">--Select--</option>
-                      {filteredProcessConfig.map((data, i) => (
+                      {processConfig.map((data, i) => (
                         <option
                           key={i}
                           value={`${data.StartTime}&${data.StoppedTime}`}
@@ -278,7 +287,11 @@ const Reports = ({ processConfig }) => {
               <div className="w-full h-[60%] xs:h-1/2 md:h-auto md:w-[55%] flex justify-center items-center">
                 <form
                   className="reports-selection xl:h-[80%] justify-center"
-                  onSubmit={handleReportDownload}
+                  // onSubmit={handleReportDownload}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleReportDownload();
+                  }}
                 >
                   <div className="flex flex-col gap-4 xs:gap-6 md:gap-12 2xl:gap-14">
                     <div className="reports-title">Select Date Range</div>
@@ -322,7 +335,11 @@ const Reports = ({ processConfig }) => {
               <div className="w-full h-[60%] xs:h-1/2 md:h-auto md:w-[55%] flex justify-center items-center">
                 <form
                   className="w-[90%] xl:w-[60%] xl:h-[80%] bg-[#EAEDF9] rounded-xl flex flex-col"
-                  onSubmit={handleReportDownload}
+                  // onSubmit={handleReportDownload}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleReportDownload();
+                  }}
                 >
                   {/* top bar */}
                   <div className="flex">
@@ -380,7 +397,7 @@ const Reports = ({ processConfig }) => {
                             className="w-full xs:w-1/2 md:w-full lg:w-1/2 p-1 rounded-sm text-center"
                           >
                             <option value="">--Select--</option>
-                            {filteredProcessConfig.map((data, i) => (
+                            {processConfig.map((data, i) => (
                               <option
                                 key={i}
                                 value={`${data.StartTime}&${data.StoppedTime}`}
@@ -472,7 +489,11 @@ const Reports = ({ processConfig }) => {
               <div className="w-full h-[60%] xs:h-1/2 md:h-auto md:w-[55%] flex justify-center items-center ">
                 <form
                   className="w-[90%] xl:w-[60%] xl:h-[80%] bg-[#EAEDF9] rounded-xl flex flex-col"
-                  onSubmit={handleReportDownload}
+                  // onSubmit={handleReportDownload}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleReportDownload();
+                  }}
                 >
                   {/* top bar */}
                   <div className="flex">
@@ -535,7 +556,7 @@ const Reports = ({ processConfig }) => {
                             className="w-full xs:w-1/2 md:w-full lg:w-1/2 p-1 rounded-sm text-center"
                           >
                             <option value="">--Select--</option>
-                            {filteredProcessConfig.map((data, i) => (
+                            {processConfig.map((data, i) => (
                               <option
                                 key={i}
                                 value={`${data.StartTime}&${data.StoppedTime}`}
@@ -623,7 +644,11 @@ const Reports = ({ processConfig }) => {
               <div className="w-full h-[60%] xs:h-1/2 md:h-auto md:w-[55%] flex justify-center items-center">
                 <form
                   className="w-[90%] xl:w-[60%] xl:h-[80%] bg-[#EAEDF9] rounded-xl flex flex-col"
-                  onSubmit={handleReportDownload}
+                  // onSubmit={handleReportDownload}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleReportDownload();
+                  }}
                 >
                   {/* top bar */}
                   <div className="flex">
@@ -685,7 +710,7 @@ const Reports = ({ processConfig }) => {
                             className="w-full xs:w-1/2 md:w-full lg:w-1/2 p-1 rounded-sm text-center"
                           >
                             <option value="">--Select--</option>
-                            {filteredProcessConfig.map((data, i) => (
+                            {processConfig.map((data, i) => (
                               <option
                                 key={i}
                                 value={`${data.StartTime}&${data.StoppedTime}`}

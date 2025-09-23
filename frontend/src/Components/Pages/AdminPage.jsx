@@ -194,14 +194,14 @@ const AdminPage = () => {
         <div className="w-full xl:w-[30%] flex flex-col md:flex-row xl:flex-col gap-4">
           {/* add user */}
           <form
-            className="bg-[#EAEDF9] rounded-md xl:h-1/2 flex flex-col justify-between gap-4 p-4 md:w-1/2 xl:w-auto"
+            className="bg-[#EAEDF9] rounded-md xl:h-1/2 flex flex-col justify-between gap-4 xl:gap-2 2xl:gap-4 p-4 xl:p-2 2xl:p-4 md:w-1/2 xl:w-auto"
             onSubmit={handleAddUser}
           >
             <div className="text-center text-base 2xl:text-lg font-medium">
               Add Credential
             </div>
 
-            <div className="flex flex-col gap-4 ">
+            <div className="flex flex-col gap-4 xl:gap-2 2xl:gap-4">
               <div className="flex items-center">
                 <label className="w-1/3 ">Email</label>
                 <input
@@ -242,7 +242,7 @@ const AdminPage = () => {
             <div className="flex items-center">
               <label className="w-1/3">Role</label>
 
-              <div className="w-2/3 flex gap-4 py-2 flex-wrap xl:flex-nowrap">
+              <div className="w-2/3 flex gap-4 xl:gap-2 2xl:gap-4 py-2 flex-wrap xl:flex-nowrap">
                 <div className="flex gap-1 hover-effect">
                   <input
                     type="radio"
@@ -626,7 +626,7 @@ const AdminPage = () => {
             </div>
 
             <div
-              className="overflow-auto flex flex-col gap-4"
+              className="overflow-auto h-[300px] xl:h-auto flex flex-col gap-4"
               style={{
                 scrollbarWidth: "thin",
                 scrollbarColor: "#E0E3F6 transparent",

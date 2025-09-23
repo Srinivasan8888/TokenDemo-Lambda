@@ -33,7 +33,7 @@ ChartJS.register(
   zoomPlugin
 );
 
-const Analysis = ({ processConfig }) => {
+const Analysis = () => {
   const [selectedReportOption, setSelectedReportOption] =
     useState("processOption");
   const [fromDate, setFromDate] = useState("");
@@ -48,19 +48,16 @@ const Analysis = ({ processConfig }) => {
   const [analyticsData, setAnalyticsData] = useState([]);
   const [processInfo, setProcessInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [processConfig, setProcessConfig] = useState([]);
 
   const chartRef = useRef(null);
 
-  const filteredProcessConfig = processConfig.filter(
-    (data) => data.StoppedTime !== ""
-  );
-
-  const handlePlotGraph = async (e) => {
-    e.preventDefault();
+  const handlePlotGraph = async (initialCall = false) => {
     try {
       setLoading(true);
       const response = await API.get("/getReports", {
         params: {
+          initialCall,
           selectedReportOption,
           fromDate,
           toDate,
@@ -75,6 +72,11 @@ const Analysis = ({ processConfig }) => {
         },
       });
       // console.log("report data", response.data);
+      if (initialCall) {
+        setProcessConfig(response.data);
+        return;
+      }
+
       setAnalyticsData(response.data);
       if (response.data.length === 0) {
         alert("No data found!");
@@ -85,6 +87,10 @@ const Analysis = ({ processConfig }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    handlePlotGraph(true);
+  }, []);
 
   // table headers
   const columns = analyticsData.length > 0 && Object.keys(analyticsData[0]);
@@ -291,7 +297,7 @@ const Analysis = ({ processConfig }) => {
             },
             color: "#1D2B73",
           },
-          beginAtZero: true,
+          beginAtZero: false,
         },
       },
     }),
@@ -549,7 +555,11 @@ const Analysis = ({ processConfig }) => {
                 <div className="xl:h-[10%] flex items-center">
                   <form
                     className=" flex md:justify-between gap-4 text-xs md:text-sm 2xl:text-base w-full xl:w-auto"
-                    onSubmit={handlePlotGraph}
+                    // onSubmit={handlePlotGraph}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePlotGraph();
+                    }}
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full">
                       <label className="w-full md:w-1/3">
@@ -562,7 +572,7 @@ const Analysis = ({ processConfig }) => {
                         className="w-full md:w-2/3 p-1 rounded-sm text-center border border-gray-400"
                       >
                         <option value="">--Select--</option>
-                        {filteredProcessConfig.map((data, i) => (
+                        {processConfig.map((data, i) => (
                           <option
                             key={i}
                             value={`${data.StartTime}&${data.StoppedTime}`}
@@ -590,7 +600,11 @@ const Analysis = ({ processConfig }) => {
                 <div className="xl:h-[10%] flex items-center">
                   <form
                     className=" flex md:justify-between gap-4 text-xs md:text-sm 2xl:text-base w-full"
-                    onSubmit={handlePlotGraph}
+                    // onSubmit={handlePlotGraph}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePlotGraph();
+                    }}
                   >
                     <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full">
                       <div className="flex gap-2 items-center">
@@ -632,7 +646,11 @@ const Analysis = ({ processConfig }) => {
                 <div className="xl:h-[25%] flex items-center">
                   <form
                     className=" flex flex-col gap-2 md:gap-4 text-xs md:text-sm 2xl:text-base w-full"
-                    onSubmit={handlePlotGraph}
+                    // onSubmit={handlePlotGraph}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePlotGraph();
+                    }}
                   >
                     {/* sub selection */}
                     <div className="flex">
@@ -745,7 +763,7 @@ const Analysis = ({ processConfig }) => {
                               className="w-2/3 p-1 rounded-sm text-center border border-gray-400"
                             >
                               <option value="">--Select--</option>
-                              {filteredProcessConfig.map((data, i) => (
+                              {processConfig.map((data, i) => (
                                 <option
                                   key={i}
                                   value={`${data.StartTime}&${data.StoppedTime}`}
@@ -778,7 +796,11 @@ const Analysis = ({ processConfig }) => {
                 <div className="xl:h-[25%] flex items-center">
                   <form
                     className="flex flex-col gap-4 text-xs md:text-sm 2xl:text-base w-full "
-                    onSubmit={handlePlotGraph}
+                    // onSubmit={handlePlotGraph}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePlotGraph();
+                    }}
                   >
                     {/* sub selection */}
                     <div className="flex">
@@ -831,7 +853,7 @@ const Analysis = ({ processConfig }) => {
                           className="w-1/2 md:w-2/3 p-1 rounded-sm text-center border border-gray-400"
                         >
                           <option value="">--Select--</option>
-                          {filteredProcessConfig.map((data, i) => (
+                          {processConfig.map((data, i) => (
                             <option
                               key={i}
                               value={`${data.StartTime}&${data.StoppedTime}`}
@@ -912,7 +934,11 @@ const Analysis = ({ processConfig }) => {
                 <div className="xl:h-[25%] flex items-center">
                   <form
                     className=" flex flex-col gap-4 text-xs md:text-sm 2xl:text-base w-full"
-                    onSubmit={handlePlotGraph}
+                    // onSubmit={handlePlotGraph}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePlotGraph();
+                    }}
                   >
                     {/* sub selection */}
                     <div className="flex">
@@ -965,7 +991,7 @@ const Analysis = ({ processConfig }) => {
                           className="w-1/2 md:w-2/3 p-1 rounded-sm text-center border border-gray-400"
                         >
                           <option value="">--Select--</option>
-                          {filteredProcessConfig.map((data, i) => (
+                          {processConfig.map((data, i) => (
                             <option
                               key={i}
                               value={`${data.StartTime}&${data.StoppedTime}`}

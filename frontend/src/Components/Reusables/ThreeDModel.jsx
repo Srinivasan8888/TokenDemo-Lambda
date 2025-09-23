@@ -100,8 +100,8 @@ const ThreeDModel = ({ lastData, thresholdStatus }) => {
   );
 
   return (
-    <div className="w-full flex">
-      <div className="flex flex-1">
+    <div className="w-full flex flex-col md:flex-row">
+      <div className="h-[200px] md:h-[400px] xl:h-auto md:flex md:flex-1">
         <Canvas dpr={[1, 2]} shadows camera={{ position: [1, 5, 8], fov: 50 }}>
           <ambientLight intensity={2} />
           <directionalLight position={[5, 5, 5]} intensity={2} castShadow />
@@ -117,7 +117,7 @@ const ThreeDModel = ({ lastData, thresholdStatus }) => {
         </Canvas>
       </div>
 
-      <div className="grid grid-cols-2 text-xs gap-0.5">
+      <div className="grid grid-cols-7 md:grid-cols-2 text-xs gap-0.5">
         {Array.from({ length: 14 }, (_, i) => `s${i + 1}`).map((sensor) => (
           <label
             key={sensor}
