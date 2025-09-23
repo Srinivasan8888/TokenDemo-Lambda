@@ -102,15 +102,23 @@ const Sensor = () => {
 
   useEffect(() => {
     let timeoutId;
+    let isMounted = true;
 
     const fetch = async () => {
+      if (!isMounted) return;
+
       await fetchAverageData();
-      timeoutId = setTimeout(fetch, 20000);
+      if (isMounted) {
+        timeoutId = setTimeout(fetch, 20000);
+      }
     };
 
     fetch();
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [dateRangeOption]);
 
   //line chart data

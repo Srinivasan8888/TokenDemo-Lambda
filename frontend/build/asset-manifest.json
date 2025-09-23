@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.a33539da.css",
-    "main.js": "/static/js/main.b2e687fb.js",
+    "main.js": "/static/js/main.b51bacfd.js",
     "static/media/loginCover.jpg": "/static/media/loginCover.895785932efc8e386d79.jpg",
     "static/media/jindalModel.png": "/static/media/jindalModel.b8146d035e87720a8c58.png",
     "static/media/jindalLogo.png": "/static/media/jindalLogo.d9816ad62951446ed141.png",
@@ -12,6 +12,6 @@
   },
   "entrypoints": [
     "static/css/main.a33539da.css",
-    "static/js/main.b2e687fb.js"
+    "static/js/main.b51bacfd.js"
   ]
 }
