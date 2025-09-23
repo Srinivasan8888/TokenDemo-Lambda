@@ -125,15 +125,21 @@ const MainPage = () => {
 
   useEffect(() => {
     let timeoutId;
+    let isMounted = true;
 
     const fetch = async () => {
+      if (!isMounted) return;
+
       await getData();
-      timeoutId = setTimeout(fetch, 2000);
+      if (isMounted) {
+        timeoutId = setTimeout(fetch, 2000);
+      }
     };
 
     fetch();
 
     return () => {
+      isMounted = false;
       clearTimeout(timeoutId);
     };
   }, [liveIntervalOption]);
