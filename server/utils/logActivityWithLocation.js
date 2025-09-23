@@ -1,4 +1,3 @@
-import axios from "axios";
 import userActivityModel from "../Models/UserActivityModel.js";
 
 const logActivityWithLocation = async (req, activityInfo) => {

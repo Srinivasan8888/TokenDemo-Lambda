@@ -59,14 +59,31 @@ export const ensureDbConnected = async (req, res, next) => {
   try {
     console.log(`ensureDbConnected: Starting for ${req.method} ${req.path}`);
     console.log(`Current connection state: ${mongoose.connection.readyState}`);
+    console.log(`MongoDB URI exists: ${!!process.env.MONGODB_URI}`);
+    console.log(`DB Name: ${process.env.dbName}`);
+    
+    // Check if environment variables are present
+    if (!process.env.MONGODB_URI) {
+      console.error('ensureDbConnected: MONGODB_URI not found in environment');
+      return res.status(503).json({ 
+        error: 'Database configuration missing',
+        details: 'MONGODB_URI environment variable not set',
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Try up to 3 attempts with longer waits for Lambda cold starts
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       console.log(`Connection attempt ${attempt}/3`);
-      const ok = await connectDB();
-      if (ok || mongoose.connection.readyState === 1) {
-        console.log('Database connection successful, proceeding...');
-        return next();
+      
+      try {
+        const ok = await connectDB();
+        if (ok || mongoose.connection.readyState === 1) {
+          console.log('Database connection successful, proceeding...');
+          return next();
+        }
+      } catch (connectError) {
+        console.error(`Connection attempt ${attempt} failed:`, connectError.message);
       }
       
       // If connecting (2), wait longer for Lambda cold starts
@@ -84,28 +101,39 @@ export const ensureDbConnected = async (req, res, next) => {
       }
       
       // Longer backoff between attempts for Lambda
-      const backoffTime = 500 * attempt;
-      console.log(`Attempt ${attempt} failed, waiting ${backoffTime}ms before retry...`);
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise(r => setTimeout(r, backoffTime));
+      if (attempt < 3) {
+        const backoffTime = 500 * attempt;
+        console.log(`Attempt ${attempt} failed, waiting ${backoffTime}ms before retry...`);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(r => setTimeout(r, backoffTime));
+      }
     }
 
     console.error('ensureDbConnected: All attempts failed', { 
       readyState: mongoose.connection.readyState,
       path: req.path,
-      method: req.method
+      method: req.method,
+      mongoUri: process.env.MONGODB_URI ? 'present' : 'missing',
+      dbName: process.env.dbName
     });
+    
     return res.status(503).json({ 
       error: 'Database unavailable',
-      details: `Connection state: ${mongoose.connection.readyState}`,
-      timestamp: new Date().toISOString()
+      details: `Connection failed after 3 attempts. State: ${mongoose.connection.readyState}`,
+      timestamp: new Date().toISOString(),
+      debug: {
+        mongoUriExists: !!process.env.MONGODB_URI,
+        dbName: process.env.dbName,
+        connectionState: mongoose.connection.readyState
+      }
     });
   } catch (error) {
     console.error('ensureDbConnected error:', error);
     return res.status(503).json({ 
-      error: 'Database unavailable',
+      error: 'Database middleware error',
       details: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      stack: error.stack
     });
   }
 };

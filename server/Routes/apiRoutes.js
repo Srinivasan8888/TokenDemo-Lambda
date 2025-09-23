@@ -17,8 +17,7 @@ import {
   setAlertConfig,
   getAlertConfig,
   getAdminData,
-  updateCronFrequency,
-  getSensorData
+  updateCronFrequency
 } from "../Controller/controller.js";
 import { verifyAccessToken, verifyApiKey } from "../Helpers/generateJwt.js";
 
@@ -37,7 +36,6 @@ router.delete("/logout", logout);
 router.post("/insertData", verifyApiKey, insertData);
 router.get("/getData", verifyAccessToken, getData);
 router.get("/getReports", verifyAccessToken, getReports);
-router.get("/getSensorData", verifyAccessToken, getSensorData);
 
 // configs
 router.post("/updateThreshold", verifyAccessToken, updateThreshold);

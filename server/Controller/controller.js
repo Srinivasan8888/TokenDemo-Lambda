@@ -1748,4 +1748,4 @@ export const getSensorData = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}
+};

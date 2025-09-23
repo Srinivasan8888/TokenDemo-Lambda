@@ -21,6 +21,7 @@
         "REDIS_PASSWORD": "tniReeoOoO7keONBNKBSDkojWq93NNky",
         "REDIS_HOST": "redis-14608.c81.us-east-1-2.ec2.redns.redis-cloud.com",
         "REDIS_PORT": "14608",
+        "REDIS_DB": "0",
         "ACCESS_SECRET_KEY": "5geK9DbqBfCEOFRCqlyAb9iJTJQIdpGP",
         "REFRESH_SECRET_KEY": "wWXHamSqJiRuPJtKuYmC2qgcA5rgNYkE",
         "ENCRYPTION_KEY": "7c067226223f028643851626f28d3cef34dc907df300afe8602fb17891e19548",
@@ -192,7 +193,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/token-demo-backend/dev/1758281508072-2025-09-19T11:31:48.072Z/token-demo-backend.zip"
+                "S3Key": "serverless/token-demo-backend/dev/1758628041444-2025-09-23T11:47:21.444Z/token-demo-backend.zip"
               },
               "Handler": "server.handler",
               "Runtime": "nodejs20.x",
@@ -207,6 +208,7 @@
                   "REDIS_PASSWORD": "tniReeoOoO7keONBNKBSDkojWq93NNky",
                   "REDIS_HOST": "redis-14608.c81.us-east-1-2.ec2.redns.redis-cloud.com",
                   "REDIS_PORT": "14608",
+                  "REDIS_DB": "0",
                   "ACCESS_SECRET_KEY": "5geK9DbqBfCEOFRCqlyAb9iJTJQIdpGP",
                   "REFRESH_SECRET_KEY": "wWXHamSqJiRuPJtKuYmC2qgcA5rgNYkE",
                   "ENCRYPTION_KEY": "7c067226223f028643851626f28d3cef34dc907df300afe8602fb17891e19548",
@@ -225,14 +227,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionfuMUDWEXedhB2AO78S2NgtRFjLu75KC5hYkfekGlpw": {
+          "ApiLambdaVersionmUoBjE0D1VAHFSApkCP8nQtu3OEoPAdYSoZpN3iaOsc": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "xWVgX5fu/DV7r+gTRDdxKXO1CKCK4IJXp83dnllf3Uc="
+              "CodeSha256": "/DmYkqUcY0MnoCSw4QGqqg/MCzDpzT2cqErKMrh2y7g="
             }
           },
           "HttpApi": {
@@ -377,7 +379,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionfuMUDWEXedhB2AO78S2NgtRFjLu75KC5hYkfekGlpw"
+              "Ref": "ApiLambdaVersionmUoBjE0D1VAHFSApkCP8nQtu3OEoPAdYSoZpN3iaOsc"
             },
             "Export": {
               "Name": "sls-token-demo-backend-dev-ApiLambdaFunctionQualifiedArn"
@@ -532,7 +534,7 @@
         "timeout": 29,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionfuMUDWEXedhB2AO78S2NgtRFjLu75KC5hYkfekGlpw"
+        "versionLogicalId": "ApiLambdaVersionmUoBjE0D1VAHFSApkCP8nQtu3OEoPAdYSoZpN3iaOsc"
       }
     },
     "configValidationMode": "warn",
@@ -555,17 +557,17 @@
           "!*.test.js"
         ],
         "artifactsS3KeyDirname": "serverless/token-demo-backend/dev/code-artifacts",
-        "artifact": "C:\\Users\\srini\\Desktop\\TokenDemo-Backend-main\\.serverless\\token-demo-backend.zip",
-        "artifactDirectoryName": "serverless/token-demo-backend/dev/1758281508072-2025-09-19T11:31:48.072Z"
+        "artifact": "C:\\Users\\srini\\Desktop\\TokenDemo-Lambda\\server\\.serverless\\token-demo-backend.zip",
+        "artifactDirectoryName": "serverless/token-demo-backend/dev/1758628041444-2025-09-23T11:47:21.444Z"
       },
       "custom": null
     },
     "layers": {},
     "isDashboardMonitoringPreconfigured": false,
-    "artifact": "C:\\Users\\srini\\Desktop\\TokenDemo-Backend-main\\.serverless\\token-demo-backend.zip"
+    "artifact": "C:\\Users\\srini\\Desktop\\TokenDemo-Lambda\\server\\.serverless\\token-demo-backend.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/token-demo-backend/dev/1758281508072-2025-09-19T11:31:48.072Z",
+    "artifactDirectoryName": "serverless/token-demo-backend/dev/1758628041444-2025-09-23T11:47:21.444Z",
     "artifact": "token-demo-backend.zip"
   }
 }

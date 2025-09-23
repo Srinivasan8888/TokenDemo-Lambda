@@ -93,20 +93,42 @@ const getRedisClient = () => {
 
 // Function to ensure Redis connection
 const ensureRedisConnection = async () => {
-  const redisClient = getRedisClient();
-  
-  if (redisClient.status !== 'ready') {
-    try {
-      console.log('Connecting to Redis...');
-      await redisClient.connect();
+  try {
+    const redisClient = getRedisClient();
+    
+    if (redisClient.status !== 'ready') {
+      console.log('Redis status:', redisClient.status, '- attempting connection...');
+      
+      // Set a timeout for connection attempt
+      const connectionPromise = redisClient.connect();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Redis connection timeout')), 10000)
+      );
+      
+      await Promise.race([connectionPromise, timeoutPromise]);
       console.log('Redis connected successfully');
-    } catch (error) {
-      console.error('Failed to connect to Redis:', error.message);
-      throw error;
     }
+    
+    return redisClient;
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error.message);
+    // Instead of throwing, return a mock client that logs warnings
+    return {
+      set: async (...args) => {
+        console.warn('Redis unavailable - skipping SET operation:', args[0]);
+        return 'OK';
+      },
+      get: async (key) => {
+        console.warn('Redis unavailable - skipping GET operation:', key);
+        return null;
+      },
+      del: async (key) => {
+        console.warn('Redis unavailable - skipping DEL operation:', key);
+        return 1;
+      },
+      status: 'error'
+    };
   }
-  
-  return redisClient;
 };
 
 // Lambda-compatible cleanup

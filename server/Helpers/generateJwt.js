@@ -3,23 +3,25 @@ import createError from "http-errors";
 import getRedisClient, { ensureRedisConnection } from "./initRedis.js";
 
 export const createAccessToken = async (userId, role) => {
-  const payload = { role };
-  const secretKey = process.env.ACCESS_SECRET_KEY;
-
-  if (!secretKey) {
-    console.error("ACCESS_SECRET_KEY is not defined");
-    throw createError.InternalServerError("JWT secret key not configured");
-  }
-
-  const options = {
-    expiresIn: "1d",
-    issuer: "xyma",
-    audience: userId,
-  };
-
   try {
-    const token = await jwt.sign(payload, secretKey, options);
-    console.log("[JWT] Access token created | user:", userId);
+    console.log("[JWT] Creating access token for user:", userId, "role:", role);
+    
+    const payload = { role };
+    const secretKey = process.env.ACCESS_SECRET_KEY;
+
+    if (!secretKey) {
+      console.error("ACCESS_SECRET_KEY is not defined");
+      throw createError.InternalServerError("JWT secret key not configured");
+    }
+
+    const options = {
+      expiresIn: "1d",
+      issuer: "xyma",
+      audience: userId,
+    };
+
+    const token = jwt.sign(payload, secretKey, options);
+    console.log("[JWT] Access token created successfully | user:", userId);
 
     // Try to persist session in Redis, but do not fail login if Redis is down
     try {
@@ -28,11 +30,13 @@ export const createAccessToken = async (userId, role) => {
       console.log("[JWT] Access token stored in Redis | user:", userId);
     } catch (redisError) {
       console.warn("[JWT] Failed to store access token in Redis | user:", userId, "| err:", redisError.message);
+      // Continue without Redis - token will still work for stateless verification
     }
 
     return token;
   } catch (error) {
-    console.error("[JWT] createAccessToken signing error:", error.message);
+    console.error("[JWT] createAccessToken error:", error.message);
+    console.error("[JWT] createAccessToken stack:", error.stack);
     throw createError.InternalServerError("Failed to create access token");
   }
 };
@@ -79,23 +83,25 @@ export const verifyAccessToken = (req, res, next) => {
 };
 
 export const createRefreshToken = async (userId, role) => {
-  const payload = { role };
-  const secretKey = process.env.REFRESH_SECRET_KEY;
-
-  if (!secretKey) {
-    console.error("REFRESH_SECRET_KEY is not defined");
-    throw createError.InternalServerError("JWT refresh secret key not configured");
-  }
-
-  const options = {
-    expiresIn: "2d",
-    issuer: "xyma",
-    audience: userId,
-  };
-
   try {
-    const token = await jwt.sign(payload, secretKey, options);
-    console.log("[JWT] Refresh token created | user:", userId);
+    console.log("[JWT] Creating refresh token for user:", userId, "role:", role);
+    
+    const payload = { role };
+    const secretKey = process.env.REFRESH_SECRET_KEY;
+
+    if (!secretKey) {
+      console.error("REFRESH_SECRET_KEY is not defined");
+      throw createError.InternalServerError("JWT refresh secret key not configured");
+    }
+
+    const options = {
+      expiresIn: "2d",
+      issuer: "xyma",
+      audience: userId,
+    };
+
+    const token = jwt.sign(payload, secretKey, options);
+    console.log("[JWT] Refresh token created successfully | user:", userId);
 
     // Try to persist refresh token in Redis, but do not fail login if Redis is down
     try {
@@ -104,11 +110,13 @@ export const createRefreshToken = async (userId, role) => {
       console.log("[JWT] Refresh token stored in Redis | user:", userId);
     } catch (redisError) {
       console.warn("[JWT] Failed to store refresh token in Redis | user:", userId, "| err:", redisError.message);
+      // Continue without Redis - token will still work for stateless verification
     }
 
     return token;
   } catch (error) {
-    console.error("[JWT] createRefreshToken signing error:", error.message);
+    console.error("[JWT] createRefreshToken error:", error.message);
+    console.error("[JWT] createRefreshToken stack:", error.stack);
     throw createError.InternalServerError("Failed to create refresh token");
   }
 };
