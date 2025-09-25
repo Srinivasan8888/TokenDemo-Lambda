@@ -663,7 +663,7 @@ export const insertData = async (req, res, next) => {
       await userAlertLogModel.create(logInfo);
       await adminAlertLogModel.create(logInfo);
 
-      console.log("alert logged");
+      // console.log("alert logged");
     }
 
     // alert mail collection
@@ -897,6 +897,7 @@ export const getReports = async (req, res, next) => {
 
     let formattedFromDate = "";
     let formattedToDate = "";
+    let reportData = [];
 
     // get from and to date from process
     if (processInfo) {
@@ -915,7 +916,7 @@ export const getReports = async (req, res, next) => {
         formattedToDate = toDate + ",23:59:59";
       }
 
-      const reportData = await dataModel
+      reportData = await dataModel
         .find({
           DeviceName: "XY001",
           Timestamp: {
@@ -925,8 +926,6 @@ export const getReports = async (req, res, next) => {
         })
         .sort({ _id: -1 })
         .select({ DeviceName: 0, __v: 0, _id: 0 });
-
-      res.status(200).json(reportData);
     }
 
     // count wise
@@ -943,13 +942,11 @@ export const getReports = async (req, res, next) => {
         };
       }
 
-      const reportData = await dataModel
+      reportData = await dataModel
         .find(query)
         .sort({ _id: -1 })
         .select({ DeviceName: 0, __v: 0, _id: 0 })
         .limit(count);
-
-      res.status(200).json(reportData);
     }
 
     // average option
@@ -961,67 +958,64 @@ export const getReports = async (req, res, next) => {
         formattedFromDate = avgFromDate + ",00:00:00";
         formattedToDate = avgToDate + ",23:59:59";
       }
+      // pipeline
+      const sensorFields = Array.from({ length: 16 }, (_, i) => `S${i + 1}`);
 
-      const reportData = await dataModel
-        .find({
-          DeviceName: "XY001",
-          Timestamp: {
-            $gte: formattedFromDate,
-            $lte: formattedToDate,
+      const project = {
+        timeGroup: {
+          $dateToString: {
+            format: avgOption === "hour" ? "%Y-%m-%d,%H:00:00" : "%Y-%m-%d,00:00:00",
+            date: { $dateFromString: { dateString: "$Timestamp" } },
           },
-        })
-        .sort({ _id: -1 })
-        .select({ DeviceName: 0, __v: 0, _id: 0 });
-
-      if (reportData.length > 0) {
-        // function to group data by hours then average those groups
-        const groupAndAverage = (reportData, groupBy) => {
-          const groupedData = reportData.reduce((acc, item) => {
-            const [date, time] = item.Timestamp.split(",");
-            const key =
-              groupBy === "hour" ? `${date}-${time.split(":")[0]}` : date;
-
-            if (!acc[key]) {
-              acc[key] = { date, hour: time.split(":")[0], sum: {}, count: 0 };
-            }
-
-            acc[key].count++;
-
-            for (let i = 1; i <= 16; i++) {
-              const sensorKey = `S${i}`;
-              const value = parseFloat(item[sensorKey]);
-              if (!isNaN(value)) {
-                acc[key].sum[sensorKey] =
-                  (acc[key].sum[sensorKey] || 0) + value;
-              }
-            }
-
-            return acc;
-          }, {});
-
-          return Object.entries(groupedData).map(([key, group]) => {
-            const avgData = {};
-            for (let i = 1; i <= 16; i++) {
-              const sensorKey = `S${i}`;
-              avgData[`avg${sensorKey}`] = (
-                group.sum[sensorKey] / group.count
-              ).toFixed(2);
-            }
-
-            const timeRange =
-              groupBy === "hour"
-                ? `${group.date},${group.hour}:00:00 to ${group.date},${group.hour}:59:59`
-                : `${group.date},00:00:00 to ${group.date},23:59:59`;
-
-            return { ...avgData, dateRange: timeRange };
-          });
+        },
+      };
+      sensorFields.forEach((s) => {
+        project[s] = {
+          $cond: {
+            if: { $eq: [`$${s}`, "N/A"] },
+            then: null,
+            else: { $toDouble: `$${s}` },
+          },
         };
+      });
 
-        if (avgOption === "hour" || avgOption === "day") {
-          const averageData = groupAndAverage(reportData, avgOption);
-          res.status(200).json(averageData);
-        }
-      }
+      const group = { _id: "$timeGroup" };
+      sensorFields.forEach((s) => {
+        group[`avg${s}`] = { $avg: `$${s}` };
+      });
+
+      const pipeline = [
+        { $match: { DeviceName: "XY001", Timestamp: { $gte: formattedFromDate, $lte: formattedToDate } } },
+        { $project: project },
+        { $group: group },
+        {
+          $project: {
+            _id: 0,
+            dateRange: {
+              $concat: [
+                "$_id",
+                " to ",
+                {
+                  $dateToString: {
+                    format: "%Y-%m-%d,%H:%M:%S",
+                    date: {
+                      $dateAdd: {
+                        startDate: { $dateFromString: { dateString: "$_id" } },
+                        unit: "second",
+                        amount: avgOption === "hour" ? 3599 : 86399
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            ...sensorFields.reduce((acc, s) => { acc[`avg${s}`] = { $round: [`$avg${s}`, 2] }; return acc; }, {})
+          }
+        },
+        { $sort: { dateRange: -1 } }
+      ];
+
+      reportData = await dataModel.aggregate(pipeline);
     }
 
     // interval option
@@ -1034,34 +1028,38 @@ export const getReports = async (req, res, next) => {
         formattedToDate = intToDate + ",23:59:59";
       }
 
-      const reportData = await dataModel
-        .find({
-          DeviceName: "XY001",
-          Timestamp: {
-            $gte: formattedFromDate,
-            $lte: formattedToDate,
+      // pipeline
+      const sensorFields = Array.from({ length: 16 }, (_, i) => `S${i + 1}`);
+
+      const project = {
+        originalTime: "$Timestamp",
+        timeGroup: {
+          $dateToString: {
+            format: intOption === "hour" ? "%Y-%m-%d,%H:00:00" : "%Y-%m-%d",
+            date: { $dateFromString: { dateString: "$Timestamp" } },
           },
-        })
-        .select({ DeviceName: 0, __v: 0, _id: 0 });
+        },
+      };
+      sensorFields.forEach((s) => {
+        project[s] = {
+          $cond: {
+            if: { $eq: [`$${s}`, "N/A"] },
+            then: null,
+            else: { $toDouble: `$${s}` },
+          },
+        };
+      });
 
-      if (reportData.length > 0) {
-        // get first data of the hour/day
-        const groupedData = reportData.reduce((acc, item) => {
-          const [date, time] = item.Timestamp.split(",");
-          const key =
-            intOption === "hour" ? `${date}-${time.split(":")[0]}` : date;
+      const pipeline = [
+        { $match: { DeviceName: "XY001", Timestamp: { $gte: formattedFromDate, $lte: formattedToDate } } },
+        { $project: project },
+        { $group: { _id: "$timeGroup", firstDocument: { $first: "$$ROOT" }, }, },
+        { $replaceRoot: { newRoot: "$firstDocument" }, },
+        { $project: { _id: 0, ...sensorFields.reduce((acc, s) => ({ ...acc, [s]: 1 }), {}), Timestamp: "$originalTime", }, },
+        { $sort: { Timestamp: -1 } }
+      ]
 
-          if (!acc[key]) {
-            acc[key] = item;
-          }
-
-          return acc;
-        }, {});
-
-        const finalArray = Object.values(groupedData).reverse();
-
-        res.status(200).json(finalArray);
-      }
+      reportData = await dataModel.aggregate(pipeline);
     }
 
     // moitor report download activity
@@ -1090,6 +1088,8 @@ export const getReports = async (req, res, next) => {
 
       logActivityWithLocation(req, activityInfo);
     }
+
+    return res.status(200).json(reportData);
   } catch (error) {
     next(error);
   }
@@ -1748,4 +1748,4 @@ export const getSensorData = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+}

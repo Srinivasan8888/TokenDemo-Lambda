@@ -1,18 +1,20 @@
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import router from "./Routes/apiRoutes.js";
 import morgan from "morgan";
 import createError from "http-errors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import {connectDB, ensureDbConnected, warmUpDb} from "./Helpers/initMongodb.js";
-import {verifyAccessToken} from "./Helpers/generateJwt.js";
-import getRedisClient, {ensureRedisConnection} from "./Helpers/initRedis.js";
+import { connectDB, ensureDbConnected, warmUpDb } from "./Helpers/initMongodb.js";
+import { verifyAccessToken } from "./Helpers/generateJwt.js";
+import getRedisClient, { ensureRedisConnection } from "./Helpers/initRedis.js";
 import serverless from "serverless-http";
 
 const app = express();
+app.use(compression());
 // Best-effort warm up DB on cold start
-warmUpDb().catch(() => {});
+warmUpDb().catch(() => { });
 app.use(morgan("dev"));
 app.use(express.json());
 
@@ -20,31 +22,31 @@ app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, Postman, or curl requests)
         if (!origin) return callback(null, true);
-        
+
         const allowedOrigins = [
             "https://d1ub64c12thrp4.cloudfront.net",
             "http://localhost:3000",
-            "http://localhost:3001", 
+            "http://localhost:3001",
             "http://127.0.0.1:3000"
         ];
-        
+
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        
+
         // Log the rejected origin for debugging
         console.log('CORS rejected origin:', origin);
         return callback(null, false); // Don't throw error, just reject
     },
     methods: [
         "GET",
-        "POST", 
+        "POST",
         "PUT",
         "DELETE",
         "OPTIONS"
     ],
     allowedHeaders: [
-        "Content-Type", 
+        "Content-Type",
         "Authorization"
     ],
     credentials: true
@@ -52,11 +54,9 @@ app.use(cors({
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
-    console.log(`${
-        req.method
-    } ${
-        req.path
-    } - Body:`, req.body);
+    console.log(`${req.method
+        } ${req.path
+        } - Body:`, req.body);
     next();
 });
 
@@ -143,7 +143,7 @@ app.get("/test-db", async (req, res) => {
         console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
         console.log('DB Name:', process.env.dbName);
 
-        const {connectDB} = await import ('./Helpers/initMongodb.js');
+        const { connectDB } = await import('./Helpers/initMongodb.js');
         const connected = await connectDB();
 
         res.json({
@@ -155,7 +155,7 @@ app.get("/test-db", async (req, res) => {
         });
     } catch (error) {
         console.error('Test DB error:', error);
-        res.json({connected: false, connectionState: mongoose.connection.readyState, error: error.message, stack: error.stack});
+        res.json({ connected: false, connectionState: mongoose.connection.readyState, error: error.message, stack: error.stack });
     }
 });
 
@@ -170,7 +170,7 @@ app.post("/test-login-debug", async (req, res) => {
         console.log('- REFRESH_SECRET_KEY exists:', !!process.env.REFRESH_SECRET_KEY);
         console.log('- DB connection state:', mongoose.connection.readyState);
 
-        const {username, password} = req.body;
+        const { username, password } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({
@@ -183,33 +183,33 @@ app.post("/test-login-debug", async (req, res) => {
         }
 
         // Test DB connection
-        const {connectDB} = await import ('./Helpers/initMongodb.js');
+        const { connectDB } = await import('./Helpers/initMongodb.js');
         const dbConnected = await connectDB();
         console.log('DB connection result:', dbConnected);
 
-        if (! dbConnected) {
-            return res.status(503).json({error: 'Database connection failed', connectionState: mongoose.connection.readyState});
+        if (!dbConnected) {
+            return res.status(503).json({ error: 'Database connection failed', connectionState: mongoose.connection.readyState });
         }
 
         // Test user lookup
-        const userModel = (await import ('./Models/UserModel.js')).default;
-        const user = await userModel.findOne({Email: username});
-        console.log('User found:', !! user);
+        const userModel = (await import('./Models/UserModel.js')).default;
+        const user = await userModel.findOne({ Email: username });
+        console.log('User found:', !!user);
 
-        if (! user) {
-            return res.status(404).json({error: 'User not found', username: username});
+        if (!user) {
+            return res.status(404).json({ error: 'User not found', username: username });
         }
 
         // Test password validation
         const validPassword = await user.isValidPassword(password);
         console.log('Password valid:', validPassword);
 
-        if (! validPassword) {
-            return res.status(401).json({error: 'Invalid password'});
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid password' });
         }
 
         // Test token generation
-        const {createAccessToken, createRefreshToken} = await import ('./Helpers/generateJwt.js');
+        const { createAccessToken, createRefreshToken } = await import('./Helpers/generateJwt.js');
         const accessToken = await createAccessToken(user.id, user.Role);
         const refreshToken = await createRefreshToken(user.id, user.Role);
 
@@ -225,14 +225,14 @@ app.post("/test-login-debug", async (req, res) => {
                 name: user.Name
             },
             tokens: {
-                accessToken: !! accessToken,
-                refreshToken: !! refreshToken
+                accessToken: !!accessToken,
+                refreshToken: !!refreshToken
             }
         });
 
     } catch (error) {
         console.error('Test login debug error:', error);
-        res.status(500).json({error: error.message, stack: error.stack, name: error.name});
+        res.status(500).json({ error: error.message, stack: error.stack, name: error.name });
     }
 });
 
@@ -278,14 +278,14 @@ app.get('/health', async (req, res) => {
             2: 'connecting',
             3: 'disconnecting'
         };
-        let readyState = mongoose.connection ?. readyState ?? 0;
+        let readyState = mongoose.connection?.readyState ?? 0;
 
         // If still connecting, wait briefly for connection to settle (up to ~2s)
         if (readyState === 2) {
             const start = Date.now();
             while (Date.now() - start < 2000 && readyState === 2) {
                 await new Promise(r => setTimeout(r, 100));
-                readyState = mongoose.connection ?. readyState ?? 0;
+                readyState = mongoose.connection?.readyState ?? 0;
             }
         }
 
@@ -297,7 +297,7 @@ app.get('/health', async (req, res) => {
         if (readyState === 1) {
             try {
                 const ping = await mongoose.connection.db.admin().ping();
-                dbStatus.ping = ping ?. ok === 1 ? 'ok' : 'fail';
+                dbStatus.ping = ping?.ok === 1 ? 'ok' : 'fail';
                 dbStatus.name = mongoose.connection.name;
                 dbStatus.host = mongoose.connection.host;
             } catch (e) {
@@ -315,7 +315,7 @@ app.get('/health', async (req, res) => {
         };
         try {
             const redisClient = await ensureRedisConnection();
-            redisStatus.state = redisClient ?. status || 'unknown';
+            redisStatus.state = redisClient?.status || 'unknown';
 
             if (redisClient && typeof redisClient.ping === 'function') {
                 const pong = await redisClient.ping();
